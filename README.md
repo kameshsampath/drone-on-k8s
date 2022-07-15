@@ -1,14 +1,13 @@
-# Yours KinDly Drone
+# Drone on Rancher Desktop
 
 A small demo and setup to demonstrate on how to setup [Drone](https://drone.io) with local Kubernetes Cluster.
 
 ## Required tools
 
-- Rancher Desktop for Kubernetes
-- Helm
-- Kustomize
-- yq
-- envsubst
+- [Rancher Desktop for Kubernetes](https://rancherdesktop.io/)
+- [Helm](https://helm.sh/)
+- [Kustomize](https://kustomize.io/)
+- envsubst `brew install gettext`
 
 ## Create Kubernetes Cluster
 
