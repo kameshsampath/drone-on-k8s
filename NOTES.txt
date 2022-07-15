@@ -1,1 +1,0 @@
-helm upgrade --install drone -f helm_vars/drone/values.yaml ~/git/drone/charts/charts/drone

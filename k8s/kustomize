@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+set -e 
+set -o pipefail
+
+# Dir where this script is located
+basedir() {
+    # Default is current directory
+    local script=${BASH_SOURCE[0]}
+
+    # Resolve symbolic links
+    if [ -L $script ]; then
+        if readlink -f $script >/dev/null 2>&1; then
+            script=$(readlink -f $script)
+        elif readlink $script >/dev/null 2>&1; then
+            script=$(readlink $script)
+        elif realpath $script >/dev/null 2>&1; then
+            script=$(realpath $script)
+        else
+            echo "ERROR: Cannot resolve symbolic link $script"
+            exit 1
+        fi
+    fi
+
+    local dir full_dir
+    dir=$(dirname "$script")
+    full_dir=$(cd "${dir}/.." && pwd)
+    echo "${full_dir}"
+}
+
+basedir=$(basedir)
+
+cat <&0 > "${basedir}/k8s/drone.yaml"
+
+GITEA_HTTP_SVC_IP="$(kubectl get svc gitea-http -n default -ojsonpath='{.spec.clusterIP}')"
+export GITEA_HTTP_SVC_IP
+
+kustomize build "${basedir}/k8s" | envsubst
+
+rm -rf "${basedir}/k8s/drone.yaml"
