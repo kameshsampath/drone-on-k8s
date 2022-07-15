@@ -51,9 +51,9 @@ func main() {
 	}
 
 	var appExists = false
-
-	for _, app := range oAuthApps {
-		if app.Name == oAuthAppName {
+	var oAuthApp *gitea.Oauth2
+	for _, oAuthApp = range oAuthApps {
+		if oAuthApp.Name == oAuthAppName {
 			appExists = true
 			break
 		}
@@ -74,7 +74,15 @@ DRONE_RPC_SECRET=%s
 `, o.ClientID, o.ClientSecret, sec)), 0600)
 		log.Printf("Successfully created oAuth application %s", oAuthAppName)
 	} else {
-		log.Printf("\noAuth app %s already exists, skipping creation", oAuthAppName)
+		log.Printf("\noAuth app %s already exists, updating", oAuthAppName)
+		_, _, err := c.UpdateOauth2(oAuthApp.ID,
+			gitea.CreateOauth2Option{
+				RedirectURIs: []string{fmt.Sprintf("%s/login", droneHostURL)},
+				Name:         oAuthAppName,
+			})
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 
 	repo, _, err := c.GetRepo(giteaAdminUser, giteaRepoName)
@@ -96,9 +104,9 @@ DRONE_RPC_SECRET=%s
 			log.Fatalln(err)
 		}
 		//TODO: Check and fix why repo.CloneURL returns git.example.com
-		log.Printf("Repo %s successfully created, you can clone via %s", newR.Name, fmt.Sprintf("%s/%s/%s", giteaUrl, giteaAdminUser, giteaRepoName))
+		log.Printf("Repo %s successfully created, you can clone via %s", newR.Name, repo.CloneURL)
 	} else {
-		log.Printf("Repo %s already exists skipping creation,you can clone via %s", repo.Name, fmt.Sprintf("%s/%s/%s", giteaUrl, giteaAdminUser, giteaRepoName))
+		log.Printf("Repo %s already exists skipping creation,you can clone via %s", repo.Name, repo.CloneURL)
 	}
 
 }

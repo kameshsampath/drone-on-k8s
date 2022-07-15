@@ -1,6 +1,7 @@
 service:
-  type: NodePort
-  nodePort: 30980
+  type: LoadBalancer
+  # has to be 8080 to traefik avoid waiting for LB IP
+  port: 8080
   
 extraSecretNamesForEnvFrom:
    # all the other as env variables are loaded via this secret
@@ -8,5 +9,9 @@ extraSecretNamesForEnvFrom:
   - drone-demos-secret
 
 env:
-  DRONE_SERVER_HOST: drone-127.0.0.1.sslip.io:8080
+  DRONE_SERVER_HOST: ${DRONE_SERVER_HOST}
+  DRONE_GITEA_SKIP_VERIFY: true
+  # https://docs.drone.io/server/provider/gitea/
+  DRONE_GITEA_SERVER: ${GITEA_URL}
+  DRONE_SERVER_PROTO: http
   
