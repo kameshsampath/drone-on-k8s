@@ -1,8 +1,12 @@
-
 secretGenerator:
   - name: drone-demos-secret
     envs:
       - .env
+    literals:
+      - "DRONE_GITEA_SKIP_VERIFY=true"
+        # https://docs.drone.io/server/provider/gitea/
+      - "DRONE_GITEA_SERVER=http://gitea-127.0.0.1.sslip.io:3000"
+      - "DRONE_SERVER_PROTO=http"
 
 generatorOptions:
   disableNameSuffixHash: true

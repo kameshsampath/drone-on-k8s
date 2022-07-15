@@ -2,3 +2,4 @@
 secret*
 !bin
 k8s.code-workspace
+gitea-config
