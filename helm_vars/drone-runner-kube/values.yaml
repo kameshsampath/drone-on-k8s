@@ -1,0 +1,6 @@
+extraSecretNamesForEnvFrom:
+   # all the other as env variables are loaded via this secret
+   # https://docs.drone.io/server/reference/
+  - drone-demos-secret
+env:
+  DRONE_RPC_HOST: "drone:8080"
