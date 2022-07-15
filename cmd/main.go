@@ -30,7 +30,7 @@ func main() {
 
 	flag.StringVar(&oAuthAppName, "a", "drone-demos", "The Gita oAuth Application Name")
 	flag.StringVar(&droneHostURL, "dh", "http://drone-127.0.0.1.sslip.io:8080", "The Drone Host URL")
-	flag.StringVar(&githubTemplateRepo, "t", "https://github.com/kameshsampath/drone-quickstart", "The GitHub template project as drone-quickstart project")
+	flag.StringVar(&githubTemplateRepo, "t", "https://github.com/kameshsampath/drone-k8s-quickstart", "The GitHub template project")
 	flag.StringVar(&giteaAdminUser, "u", "demo", "The Gitea admin username")
 	flag.StringVar(&giteaAdminPassword, "p", "demo@123", "The Gitea admin user password")
 	flag.StringVar(&giteaUrl, "g", "http://gitea-127.0.0.1.sslip.io:3000", "The Gitea URL")

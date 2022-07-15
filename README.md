@@ -92,6 +92,34 @@ envsubst < $PROJECT_HOME/helm_vars/drone/values.yaml | helm upgrade --install dr
 
 You can now open the Drone Server using the url `http://drone-${DRONE_SERVER_HOST}`,
 
+Follow the onscreen instruction to complete the registration and activate the repository `drone-quickstart` repository.
+
+![Register](./images/reg_complete.png)
+
+On registering and continue you should see the repo list,
+
+![Register](./images/repo_list.png)
+
+Click on the repo to activate,
+
+![Register](./images/activate_repo.png)
+
+## Deploy Drone Runner
+
+```shell
+envsubst < $PROJECT_HOME/helm_vars/drone-runner-kube/values.yaml | helm upgrade --install drone-runner-kube drone/drone-runner-kube -f -
+```
+
+## Clone the Quickstart
+
+Clone the `drone-quickstart` locally from Gitea and do some changes, commit and push it back to `$GITEA_URL`.
+
+__NOTE__: The default Gitea credentials is `demo/demo@123`
+
+The push should trigger a build in Drone and a successful build is as shown,
+
+![Register](./images/successful_build.png)
+
 ## Build Gitea Config Binaries
 
 The demo uses a [util](./util/) code to configure Gitea, you can build the code using the command
