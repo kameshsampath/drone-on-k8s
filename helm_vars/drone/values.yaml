@@ -1,0 +1,13 @@
+service:
+  type: NodePort
+  nodePort: 30980
+  
+extraSecretNamesForEnvFrom:
+  - drone-demos-secret
+
+env:
+  DRONE_SERVER_HOST: http://drone-127.0.0.1.sslip.io:8080
+  DRONE_SERVER_PROTO: http
+  # https://docs.drone.io/server/provider/gitea/
+  DRONE_GITEA_SERVER: http://gitea-127.0.0.1.sslip.io:3000
+  DRONE_GITEA_SKIP_VERIFY: "true"

@@ -1,0 +1,13 @@
+service:
+  http:
+    type: NodePort
+    port: 3000
+    # we configure kind to route traffic from host 3000 to container port 30950
+    nodePort: 30950
+gitea:
+  admin:
+    # DON'T use username admin as its reserved and gitea will 
+    # fail to start
+    username: demo
+    password: demo@123
+    email: admin@example.com

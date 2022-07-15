@@ -1,0 +1,4 @@
+**/.env*
+secret*
+!bin
+k8s.code-workspace

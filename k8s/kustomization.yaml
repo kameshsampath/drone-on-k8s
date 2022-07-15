@@ -1,0 +1,8 @@
+
+secretGenerator:
+  - name: drone-demos-secret
+    envs:
+      - .env
+
+generatorOptions:
+  disableNameSuffixHash: true
