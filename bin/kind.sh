@@ -24,8 +24,10 @@ nodes:
     extraPortMappings:
       - containerPort: 30980
         hostPort: 8080
+        listenAddress: 127.0.0.1
       - containerPort: 30950
         hostPort: 3000
+        listenAddress: 127.0.0.1
 EOF
 
 # connect the registry to the cluster network if not already connected

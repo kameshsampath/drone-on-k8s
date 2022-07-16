@@ -5,3 +5,24 @@ secretGenerator:
 
 generatorOptions:
   disableNameSuffixHash: true
+
+resources:
+  - drone.yaml
+
+patches:
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: drone
+      spec:
+        template:
+          spec:
+            hostAliases:
+              - ip: ${GITEA_HTTP_SVC_IP}
+                hostnames:
+                  - "gitea-127.0.0.1.sslip.io"
+    target:
+      kind: Deployment
+      labelSelector: "app.kubernetes.io/name=drone"
+

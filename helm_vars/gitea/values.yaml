@@ -1,7 +1,8 @@
 service:
   http:
-    type: LoadBalancer
+    type: NodePort
     port: 3000
+    nodePort: 30950
 gitea:
   admin:
     # DON'T use username admin as its reserved and gitea will 
@@ -13,8 +14,8 @@ gitea:
     server:
       PROTOCOL: http
       HTTP_PORT: 3000
-      DOMAIN: ${GITEA_DOMAIN}
-      ROOT_URL: http://${GITEA_DOMAIN}:3000/
+      DOMAIN: gitea-127.0.0.1.sslip.io
+      ROOT_URL: http://gitea-127.0.0.1.sslip.io:3000/
     webhook:
       # since we will deploy to local networks we will disable 
       # TLS verify and allow all hosts

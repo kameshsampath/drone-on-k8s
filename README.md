@@ -1,13 +1,13 @@
-# Drone on Rancher Desktop
+# Yours KinDly Drone
 
-A small demo and setup to demonstrate on how to setup [Drone](https://drone.io) with local Kubernetes Cluster.
+A small demo and setup to demonstrate on how to setup [Drone](https://drone.io) with [KinD](https://kind.sigs.k8s.io/) as your local Kubernetes Cluster.
 
 ## Required tools
 
-- [Rancher Desktop for Kubernetes](https://rancherdesktop.io/)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- [KinD](https://kind.sigs.k8s.io/)
 - [Helm](https://helm.sh/)
 - [Kustomize](https://kustomize.io/)
-- envsubst `brew install gettext`
 
 ## Create Kubernetes Cluster
 
@@ -16,8 +16,6 @@ A small demo and setup to demonstrate on how to setup [Drone](https://drone.io) 
 ```
 
 ## Deploy Gitea
-
-__TODO__: Use custom namespace ??
 
 ```shell
 helm repo add gitea-charts https://dl.gitea.io/charts/
@@ -30,44 +28,22 @@ helm upgrade --install gitea gitea-charts/gitea -f $PROJECT_HOME/helm_vars/gitea
 ## Gitea URL
 
 ```shell
-export GITEA_DOMAIN="gitea-$(kubectl get svc gitea-http -ojsonpath='{.status.loadBalancer.ingress[*].ip}').sslip.io"
+export GITEA_DOMAIN="gitea-127.0.0.1.sslip.io"
 export GITEA_URL="http://${GITEA_DOMAIN}:3000"
 ```
 
-Update the Gitea `DOMAIN` and `ROOT_URL` to use the `gitea-http` LoadBalancer IP,
-
-```shell
-envsubst < $PROJECT_HOME/helm_vars/gitea/values.yaml | helm upgrade --install gitea gitea-charts/gitea -f -
-```
-
-You can access Gitea now in your browser using open "${GITEA_URL}"
+You can access Gitea now in your browser using open `${GITEA_URL}`. Default credentials `demo/demo@123`.
 
 ## Drone URL
 
 The URL where Drone Server will be deployed,
 
-__IMPORTANT__: This value will be updated in upcoming steps. Ignore if the Drone server fails to start as upcoming steps will fix it.
-
 ```shell
-export DRONE_SERVER_HOST="localhost:8080"
+export DRONE_SERVER_HOST="drone-127.0.0.1.sslip.io:8080"
+export DRONE_SERVER_URL="http://${DRONE_SERVER_HOST}"
 ```
 
 ## Deploy Drone
-
-__TODO__: Use custom namespace ??
-
-```shell
-helm repo add drone https://charts.drone.io
-helm repo update
-envsubst < $PROJECT_HOME/helm_vars/drone/values.yaml | helm upgrade --install drone drone/drone -f -
-```
-
-Recompute the `DRONE_SERVER_HOST`,
-
-```shell
-export DRONE_SERVER_HOST="drone-$(kubectl get svc drone -ojsonpath='{.status.loadBalancer.ingress[*].ip}').sslip.io:8080"
-export DRONE_SERVER_URL="http://${DRONE_SERVER_HOST}"
-```
 
 ## Configure Gitea
 
@@ -83,13 +59,39 @@ Create secrets to be used by Drone,
 kustomize build $PROJECT_HOME/k8s | kubectl apply -f - 
 ```
 
-Update Drone deployment with right configuration values,
+Deploy Drone,
+
+Create namespace to deploy drone
 
 ```shell
-envsubst < $PROJECT_HOME/helm_vars/drone/values.yaml | helm upgrade --install drone drone/drone -f -
+kubectl create ns drone
+```
+
+Deploy drone server,
+
+```shell
+helm upgrade --install drone drone/drone \
+  --values $PROJECT_HOME/helm_vars/drone/values.yaml \
+  --namespace=drone \
+  --post-renderer  k8s/kustomize
+```
+
+By default `gitea-127.0.0.1.sslip.io:3000` resolves to `127.0.0.1:3000` on the drone server pod. As we require `gitea-127.0.0.1.sslip.io:3000` to be resolved to the `gitea-http` service on the cluster we do [helm post render](https://helm.sh/docs/topics/advanced/#usage) to add [host aliases](https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/) to drone server deployments to resolve the `gitea-127.0.0.1.sslip.io:3000` to the `ClusterIP` of the `gitea-http` service.You can check the ClusterIP of the gitea service using the command `kubectl get svc gitea-http -n default -ojsonpath='{.spec.clusterIP}'`
+
+As we did with drone server to resolve `gitea-127.0.0.1.sslip.ip`, we also need to update `gitea` deployment for host aliases to resolve `drone-127.0.0.1.sslip.io:8080` to resolve to `drone` service on the __drone__ namespace.
+
+This time we will use `kubectl` patch technique,
+
+```shell
+export DRONE_SERVICE_IP="$(kubectl get svc -n drone drone -ojsonpath='{.spec.clusterIP}')"
+kubectl patch statefulset gitea -n default --patch "$(envsubst<$PROJECT_HOME/k8s/patch.json)" 
 ```
 
 You can now open the Drone Server using the url `http://drone-${DRONE_SERVER_HOST}`,
+
+Authorize the `drone-127.0.0.1.sslip.io` to use Gitea oAuth,
+
+![Register](./images/authorize.png)
 
 Follow the onscreen instruction to complete the registration and activate the repository `drone-quickstart` repository.
 
@@ -105,19 +107,41 @@ Click on the repo to activate,
 
 ## Deploy Drone Runner
 
+We need to deploy `drone-runner-kube` that will be used to run the pipelines on Kubernetes server,
+
 ```shell
-envsubst < $PROJECT_HOME/helm_vars/drone-runner-kube/values.yaml | helm upgrade --install drone-runner-kube drone/drone-runner-kube -f -
+helm upgrade --install drone-runner-kube drone/drone-runner-kube \
+  --namespace=drone \
+  --values $PROJECT_HOME/helm_vars/drone-runner-kube/values.yaml 
 ```
 
 ## Clone the Quickstart
 
-Clone the `drone-quickstart` locally from Gitea and do some changes, commit and push it back to `$GITEA_URL`.
+Clone the `drone-quickstart` locally from Gitea, navigate to folder of your choice and run the following command,
+
+```source
+git clone http://gitea-127.0.0.1.sslip.io:3000/demo/drone-quickstart.git
+cd drone-quickstart
+```
+
+> __IMPORTANT__:
+  As we use [KinD](https://kind.sigs.k8s.io/) as your Kubernetes cluster we need to update `.drone.yml`  __hostAliases__ to point to the `gitea-http`  __ClusterIP__, otherwise the clone step of the pipeline will fail with `gitea-127.0.0.1.sslip.io` trying to connected local step pod container on port`3000`.
+
+  To get the __ClusterIP__ of the `gitea-http` service run the following command,
+
+  ```shell
+  kubectl get svc gitea-http -n default -ojsonpath='{.spec.clusterIP}'
+  ```
+
+Commit and push the code to Gitea to see the building getting triggered.
 
 __NOTE__: The default Gitea credentials is `demo/demo@123`
 
-The push should trigger a build in Drone and a successful build is as shown,
+A successful drone pipeline build is as shown,
 
 ![Register](./images/successful_build.png)
+
+Please check the [docs](https://docs.drone.io/pipeline/kubernetes/overview/) for more configuration options.
 
 ## Build Gitea Config Binaries
 
@@ -132,7 +156,5 @@ The command generates a binary in $PROJECT_HOME/bin for each OS/Arch combination
 ## Clean up
 
 ```shell
-helm delete drone
-helm delete gitea
-kubectl delete secret drone-demos-secret
+ kind delete cluster --name=drone-demo
 ```
