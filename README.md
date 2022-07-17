@@ -56,8 +56,12 @@ export DRONE_SERVER_URL="http://${DRONE_SERVER_HOST}"
 Configure Gitea for oAuth to be used by Drone and the demo repository that will be clone from GitHub,
 
 ```shell
-./gitea-config -g "${GITEA_URL}" -dh "${DRONE_SERVER_URL}"
+$PROJECT_HOME/bin/gitea-config-darwin-arm64 \
+  -g "${GITEA_URL}" \
+  -dh "${DRONE_SERVER_URL}"
 ```
+
+**NOTE**: Please use the right `gitea-config` binary that suits your environment. In the example above we use the macOS binary
 
 Create secrets to be used by Drone,
 
@@ -126,24 +130,33 @@ git clone http://gitea-127.0.0.1.sslip.io:3000/demo/drone-quickstart.git
 cd drone-quickstart
 ```
 
-> **IMPORTANT**:
-  As we use [kind](https://kind.sigs.k8s.io/) as your Kubernetes cluster we need to update `.drone.yml`  **hostAliases** to point to the `gitea-http`  **ClusterIP**, otherwise the clone step of the pipeline will fail with `gitea-127.0.0.1.sslip.io` trying to connected local step pod container on port`3000`.
+If you try to make some changes to the code and push to the Gitea repo you will see the build failing as shown
 
-  To get the **ClusterIP** of the `gitea-http` service run the following command,
+![Failed build](./images/failed_build.gif)
 
-  ```shell
-  kubectl get svc gitea-http -n default -ojsonpath='{.spec.clusterIP}'
-  ```
+### Why the build fails?
 
-Commit and push the code to Gitea to see the building getting triggered.
+As we use [kind](https://kind.sigs.k8s.io/) as your Kubernetes cluster we need to update `.drone.yml`  **hostAliases** to point to the `gitea-http`  **ClusterIP**, otherwise the clone step of the pipeline will fail with `gitea-127.0.0.1.sslip.io` trying to connected local step pod container on port`3000`.
+
+To get the **ClusterIP** of the `gitea-http` service run the following command,
+
+```shell
+kubectl get svc gitea-http -n default -ojsonpath='{.spec.clusterIP}'
+```
+
+Commit and push the code to Gitea to see the building getting triggered. This time build succeeds as shown,
+
+![successful build](./images/succcessful_build.gif)
 
 **NOTE**: The default Gitea credentials is `demo/demo@123`
 
-A successful drone pipeline build is as shown,
-
-![Register](./images/successful_build.png)
-
 Please check the [docs](https://docs.drone.io/pipeline/kubernetes/overview/) for more configuration options.
+
+## Clean up
+
+```shell
+ kind delete cluster --name=drone-demo
+```
 
 ## Build Gitea Config Binaries
 
@@ -154,9 +167,3 @@ The demo uses a [util](./util/) code to configure Gitea, you can build the code 
 ```
 
 The command generates a binary in $PROJECT_HOME/bin for each OS/Arch combination. Use the one that suits your OS/Arch combo.
-
-## Clean up
-
-```shell
- kind delete cluster --name=drone-demo
-```
