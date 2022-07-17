@@ -1,6 +1,7 @@
 extraSecretNamesForEnvFrom:
    # all the other as env variables are loaded via this secret
-   # https://docs.drone.io/server/reference/
   - drone-demos-secret
 env:
+  # the url to reach the Drone server
+  # we point it to the local drone kubernetes service drone on port 8080
   DRONE_RPC_HOST: "drone:8080"

@@ -1,13 +1,16 @@
-# Yours KinDly Drone
+# Yours Kindly Drone
 
-A small demo and setup to demonstrate on how to setup [Drone](https://drone.io) with [KinD](https://kind.sigs.k8s.io/) as your local Kubernetes Cluster.
+A small demo and setup to demonstrate on how to setup [Drone](https://drone.io) with [kind](https://kind.sigs.k8s.io/) as your local Kubernetes Cluster.
 
 ## Required tools
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- [KinD](https://kind.sigs.k8s.io/)
+- [kind](https://kind.sigs.k8s.io/)
 - [Helm](https://helm.sh/)
 - [Kustomize](https://kustomize.io/)
+- [envsusbst](https://www.man7.org/linux/man-pages/man1/envsubst.1.html)
+
+All linux distributions adds **envsubst** via [gettext](https://www.gnu.org/software/gettext/) package. On macOS it can be installed using [Homebrew](https://brew.sh/) like `brew install gettext`.
 
 ## Create Kubernetes Cluster
 
@@ -20,7 +23,10 @@ A small demo and setup to demonstrate on how to setup [Drone](https://drone.io) 
 ```shell
 helm repo add gitea-charts https://dl.gitea.io/charts/
 helm repo update
-helm upgrade --install gitea gitea-charts/gitea -f $PROJECT_HOME/helm_vars/gitea/values.yaml --wait
+helm upgrade \
+  --install gitea gitea-charts/gitea \
+  --values $PROJECT_HOME/helm_vars/gitea/values.yaml \
+  --wait
 ```
 
 ## Setup Environment
@@ -67,6 +73,13 @@ Create namespace to deploy drone
 kubectl create ns drone
 ```
 
+Add drone helm repo,
+
+```shell
+helm repo add drone https://charts.drone.io
+helm repo update
+```
+
 Deploy drone server,
 
 ```shell
@@ -74,11 +87,14 @@ helm upgrade --install drone drone/drone \
   --values $PROJECT_HOME/helm_vars/drone/values.yaml \
   --namespace=drone \
   --post-renderer  k8s/kustomize
+  --wait
 ```
+
+## Host Aliases
 
 By default `gitea-127.0.0.1.sslip.io:3000` resolves to `127.0.0.1:3000` on the drone server pod. As we require `gitea-127.0.0.1.sslip.io:3000` to be resolved to the `gitea-http` service on the cluster we do [helm post render](https://helm.sh/docs/topics/advanced/#usage) to add [host aliases](https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/) to drone server deployments to resolve the `gitea-127.0.0.1.sslip.io:3000` to the `ClusterIP` of the `gitea-http` service.You can check the ClusterIP of the gitea service using the command `kubectl get svc gitea-http -n default -ojsonpath='{.spec.clusterIP}'`
 
-As we did with drone server to resolve `gitea-127.0.0.1.sslip.ip`, we also need to update `gitea` deployment for host aliases to resolve `drone-127.0.0.1.sslip.io:8080` to resolve to `drone` service on the __drone__ namespace.
+As we did with drone server to resolve `gitea-127.0.0.1.sslip.ip`, we also need to update `gitea` deployment for host aliases to resolve `drone-127.0.0.1.sslip.io:8080` to resolve to `drone` service on the **drone** namespace.
 
 This time we will use `kubectl` patch technique,
 
@@ -87,23 +103,9 @@ export DRONE_SERVICE_IP="$(kubectl get svc -n drone drone -ojsonpath='{.spec.clu
 kubectl patch statefulset gitea -n default --patch "$(envsubst<$PROJECT_HOME/k8s/patch.json)" 
 ```
 
-You can now open the Drone Server using the url `http://drone-${DRONE_SERVER_HOST}`,
+You can now open the Drone Server using the url `${DRONE_SERVER_URL}`, follow the onscreen instructions complete the registration and activate the `drone-quickstart` repo.
 
-Authorize the `drone-127.0.0.1.sslip.io` to use Gitea oAuth,
-
-![Register](./images/authorize.png)
-
-Follow the onscreen instruction to complete the registration and activate the repository `drone-quickstart` repository.
-
-![Register](./images/reg_complete.png)
-
-On registering and continue you should see the repo list,
-
-![Register](./images/repo_list.png)
-
-Click on the repo to activate,
-
-![Register](./images/activate_repo.png)
+![alt](./images/drone_reg_complete.gif)
 
 ## Deploy Drone Runner
 
@@ -124,10 +126,10 @@ git clone http://gitea-127.0.0.1.sslip.io:3000/demo/drone-quickstart.git
 cd drone-quickstart
 ```
 
-> __IMPORTANT__:
-  As we use [KinD](https://kind.sigs.k8s.io/) as your Kubernetes cluster we need to update `.drone.yml`  __hostAliases__ to point to the `gitea-http`  __ClusterIP__, otherwise the clone step of the pipeline will fail with `gitea-127.0.0.1.sslip.io` trying to connected local step pod container on port`3000`.
+> **IMPORTANT**:
+  As we use [kind](https://kind.sigs.k8s.io/) as your Kubernetes cluster we need to update `.drone.yml`  **hostAliases** to point to the `gitea-http`  **ClusterIP**, otherwise the clone step of the pipeline will fail with `gitea-127.0.0.1.sslip.io` trying to connected local step pod container on port`3000`.
 
-  To get the __ClusterIP__ of the `gitea-http` service run the following command,
+  To get the **ClusterIP** of the `gitea-http` service run the following command,
 
   ```shell
   kubectl get svc gitea-http -n default -ojsonpath='{.spec.clusterIP}'
@@ -135,7 +137,7 @@ cd drone-quickstart
 
 Commit and push the code to Gitea to see the building getting triggered.
 
-__NOTE__: The default Gitea credentials is `demo/demo@123`
+**NOTE**: The default Gitea credentials is `demo/demo@123`
 
 A successful drone pipeline build is as shown,
 
