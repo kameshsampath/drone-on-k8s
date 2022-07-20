@@ -2,6 +2,8 @@
 
 A small demo and setup to demonstrate on how to setup [Drone](https://drone.io) with [kind](https://kind.sigs.k8s.io/) as your local Kubernetes Cluster.
 
+For complete walk through and explanation checkout my [blog](https://kubesimplify.com/yours-kindly-drone)
+
 ## Required tools
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
@@ -12,10 +14,18 @@ A small demo and setup to demonstrate on how to setup [Drone](https://drone.io) 
 
 All linux distributions adds **envsubst** via [gettext](https://www.gnu.org/software/gettext/) package. On macOS it can be installed using [Homebrew](https://brew.sh/) like `brew install gettext`.
 
+## Clone the Sources
+
+```shell
+git clone https://github.com/kameshsampath/drone-on-k8s && \
+  cd "$(basename "$_" .git)"
+export PROJECT_HOME="${PWD}"
+```
+
 ## Create Kubernetes Cluster
 
 ```shell
-./bin/kind.sh
+$PROJECT_HOME/bin/kind.sh
 ```
 
 ## Deploy Gitea
@@ -63,12 +73,6 @@ $PROJECT_HOME/bin/gitea-config-darwin-arm64 \
 
 **NOTE**: Please use the right `gitea-config` binary that suits your environment. In the example above we use the macOS binary
 
-Create secrets to be used by Drone,
-
-```shell
-kustomize build $PROJECT_HOME/k8s | kubectl apply -f - 
-```
-
 Deploy Drone,
 
 Create namespace to deploy drone
@@ -90,7 +94,7 @@ Deploy drone server,
 helm upgrade --install drone drone/drone \
   --values $PROJECT_HOME/helm_vars/drone/values.yaml \
   --namespace=drone \
-  --post-renderer  k8s/kustomize
+  --post-renderer  $PROJECT_HOME/k8s/kustomize
   --wait
 ```
 
