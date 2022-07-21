@@ -94,7 +94,7 @@ Deploy drone server,
 helm upgrade --install drone drone/drone \
   --values $PROJECT_HOME/helm_vars/drone/values.yaml \
   --namespace=drone \
-  --post-renderer  $PROJECT_HOME/k8s/kustomize
+  --post-renderer  $PROJECT_HOME/k8s/kustomize \
   --wait
 ```
 
@@ -122,7 +122,8 @@ We need to deploy `drone-runner-kube` that will be used to run the pipelines on 
 ```shell
 helm upgrade --install drone-runner-kube drone/drone-runner-kube \
   --namespace=drone \
-  --values $PROJECT_HOME/helm_vars/drone-runner-kube/values.yaml 
+  --values $PROJECT_HOME/helm_vars/drone-runner-kube/values.yaml \
+  --wait
 ```
 
 ## Clone the Quickstart
